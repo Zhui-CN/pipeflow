@@ -1,5 +1,12 @@
 package tasks
 
+type TaskFuncType = func([]byte) Task
+
+var (
+	RawType  = NewRawTask
+	MetaType = NewMetaTask
+)
+
 type Task interface {
 	Confirm()
 	SetTo(string)
@@ -12,9 +19,6 @@ type Task interface {
 	GetRawData() []byte
 	JsonUnmarshalData(any)
 }
-
-var RawType = NewRawTask
-var MetaType = NewMetaTask
 
 type task struct {
 	data          []byte
