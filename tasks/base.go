@@ -13,8 +13,8 @@ type Task interface {
 	JsonUnmarshalData(any)
 }
 
-var RawType = newRawTask
-var MetaType = newMetaTask
+var RawType = NewRawTask
+var MetaType = NewMetaTask
 
 type task struct {
 	data          []byte

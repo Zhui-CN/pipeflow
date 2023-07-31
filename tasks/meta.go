@@ -17,8 +17,8 @@ type meta struct {
 }
 
 type metaData struct {
-	Meta meta
-	Data any
+	Meta meta `json:"meta"`
+	Data any  `json:"data"`
 }
 
 type MetaTask struct {
@@ -38,11 +38,53 @@ func (t *MetaTask) JsonUnmarshalData(v any) {
 	}
 }
 
-func (t *MetaTask) Spawn(data any, nextHop bool, hopConf *Hop) {
-
+func (t *MetaTask) GetNextTasks() []*MetaTask {
+	var nextTasks []*MetaTask
+	if t.NextHop {
+		for _, hop := range t.MetaData.Meta.Hop.Next {
+			md := &metaData{
+				Meta: meta{
+					Params: t.MetaData.Meta.Params,
+					Hop:    hop,
+				},
+				Data: t.MetaData.Data,
+			}
+			byteData, _ := json.Marshal(md)
+			metaTask := &MetaTask{task: &task{data: byteData}, MetaData: md, NextHop: true}
+			nextTasks = append(nextTasks, metaTask)
+		}
+	} else {
+		nextTasks = append(nextTasks, t)
+	}
+	return nextTasks
 }
 
-func newMetaTask(data []byte) Task {
+func (t *MetaTask) AddHops(hops []Hop) {
+	t.MetaData.Meta.Hop.Next = append(t.MetaData.Meta.Hop.Next, hops...)
+}
+
+func (t *MetaTask) Spawn(data any, nextHop bool, hopConf *Hop) *MetaTask {
+	md := &metaData{
+		Meta: t.MetaData.Meta,
+		Data: data,
+	}
+	if hopConf != nil {
+		md.Meta.Hop = *hopConf
+	}
+	byteData, _ := json.Marshal(md)
+	return &MetaTask{
+		task: &task{
+			data:          byteData,
+			toName:        t.toName,
+			fromName:      t.fromName,
+			confirmHandle: t.confirmHandle,
+		},
+		MetaData: md,
+		NextHop:  nextHop,
+	}
+}
+
+func NewMetaTask(data []byte) Task {
 	var md metaData
 	if err := json.Unmarshal(data, &md); err != nil {
 		log.Panicln("json Unmarshal error:", err.Error())

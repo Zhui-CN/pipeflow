@@ -19,6 +19,6 @@ func (t *RawTask) JsonUnmarshalData(v any) {
 	}
 }
 
-func newRawTask(data []byte) Task {
+func NewRawTask(data []byte) Task {
 	return &RawTask{task: &task{data: data}}
 }
