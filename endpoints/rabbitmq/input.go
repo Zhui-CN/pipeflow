@@ -14,9 +14,17 @@ func confirm(m *amqp.Delivery) func() {
 }
 
 type inputEndpoint struct {
-	autoConfirm bool
-	innerChan   <-chan amqp.Delivery
-	funcType    tasks.TaskFuncType
+	autoConfirm  bool
+	innerChan    chan *amqp.Delivery
+	funcType     tasks.TaskFuncType
+	deliveryChan <-chan amqp.Delivery
+}
+
+func (p *inputEndpoint) handleMessage() {
+	for {
+		msg := <-p.deliveryChan
+		p.innerChan <- &msg
+	}
 }
 
 func (p *inputEndpoint) Get() tasks.Task {
@@ -25,7 +33,7 @@ func (p *inputEndpoint) Get() tasks.Task {
 	if p.autoConfirm {
 		msg.Ack(false)
 	} else {
-		task.SetConfirmHandle(confirm(&msg))
+		task.SetConfirmHandle(confirm(msg))
 	}
 	return task
 }
@@ -48,9 +56,11 @@ func NewInputEndpoint(conf Conf, queue string, qos int, autoConfirm bool, taskTy
 		log.Fatal("cannot allocate consume:", err.Error())
 	}
 	endpoint := &inputEndpoint{
-		autoConfirm: autoConfirm,
-		innerChan:   deliveryChan,
-		funcType:    taskType,
+		autoConfirm:  autoConfirm,
+		innerChan:    make(chan *amqp.Delivery, qos),
+		funcType:     taskType,
+		deliveryChan: deliveryChan,
 	}
+	go endpoint.handleMessage()
 	return endpoint
 }
