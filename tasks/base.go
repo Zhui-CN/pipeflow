@@ -1,6 +1,6 @@
 package tasks
 
-type TaskFuncType = func([]byte) Task
+type TaskTypeFunc = func([]byte) Task
 
 var (
 	RawType  = NewRawTask
@@ -43,16 +43,16 @@ func (t *task) GetFrom() string {
 	return t.fromName
 }
 
+func (t *task) GetRawData() []byte {
+	return t.data
+}
+
 func (t *task) SetConfirmHandle(f func()) {
 	t.confirmHandle = f
 }
 
 func (t *task) GetConfirmHandle() func() {
 	return t.confirmHandle
-}
-
-func (t *task) GetRawData() []byte {
-	return t.data
 }
 
 func (t *task) Confirm() {

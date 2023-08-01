@@ -6,14 +6,14 @@ import (
 )
 
 type Hop struct {
-	Params any    `json:"params"`
-	Queue  string `json:"queue"`
-	Next   []Hop  `json:"next"`
+	Params any    `json:"params"` // current hop params
+	Queue  string `json:"queue"`  // queue name
+	Next   []Hop  `json:"next"`   // next hop info
 }
 
 type meta struct {
-	Params any `json:"params"`
-	Hop    Hop `json:"hop"`
+	Params any `json:"params"` // meta params
+	Hop    Hop `json:"hop"`    // hop info
 }
 
 type metaData struct {
@@ -21,10 +21,16 @@ type metaData struct {
 	Data any  `json:"data"`
 }
 
+/*
+MetaTask
+like task, additionally,
+add metaData containing hops conf which determine
+following dynamic outputEndpoints how to publish message
+*/
 type MetaTask struct {
 	*task
-	MetaData *metaData
-	NextHop  bool
+	MetaData *metaData // metaData info
+	NextHop  bool      // whether following
 }
 
 func (t *MetaTask) SetData(data any) {
@@ -38,15 +44,13 @@ func (t *MetaTask) JsonUnmarshalData(v any) {
 	}
 }
 
+// GetNextTasks get hop next tasks
 func (t *MetaTask) GetNextTasks() []*MetaTask {
 	var nextTasks []*MetaTask
 	if t.NextHop {
 		for _, hop := range t.MetaData.Meta.Hop.Next {
 			md := &metaData{
-				Meta: meta{
-					Params: t.MetaData.Meta.Params,
-					Hop:    hop,
-				},
+				Meta: meta{Params: t.MetaData.Meta.Params, Hop: hop},
 				Data: t.MetaData.Data,
 			}
 			byteData, _ := json.Marshal(md)
@@ -59,10 +63,12 @@ func (t *MetaTask) GetNextTasks() []*MetaTask {
 	return nextTasks
 }
 
+// AddHops append hops
 func (t *MetaTask) AddHops(hops []Hop) {
 	t.MetaData.Meta.Hop.Next = append(t.MetaData.Meta.Hop.Next, hops...)
 }
 
+// Spawn spawn new task
 func (t *MetaTask) Spawn(data any, nextHop bool, hopConf *Hop) *MetaTask {
 	md := &metaData{
 		Meta: t.MetaData.Meta,
@@ -87,7 +93,7 @@ func (t *MetaTask) Spawn(data any, nextHop bool, hopConf *Hop) *MetaTask {
 func NewMetaTask(data []byte) Task {
 	var md metaData
 	if err := json.Unmarshal(data, &md); err != nil {
-		log.Panicln("json Unmarshal error:", err.Error())
+		log.Panicln("NewMetaTask json Unmarshal error:", err.Error())
 	}
 	return &MetaTask{
 		task:     &task{data: data},

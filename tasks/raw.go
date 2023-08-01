@@ -5,10 +5,15 @@ import (
 	"log"
 )
 
+/*
+RawTask
+manage raw data and flow control
+*/
 type RawTask struct {
 	*task
 }
 
+// SetData raw task data must be []byte
 func (t *RawTask) SetData(data any) {
 	t.data = data.([]byte)
 }
