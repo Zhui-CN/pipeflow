@@ -2,29 +2,30 @@ package tasks
 
 type TaskTypeFunc = func([]byte) Task
 
+// Create task
 var (
 	RawType  = NewRawTask
 	MetaType = NewMetaTask
 )
 
 type Task interface {
-	Confirm()
-	SetTo(string)
-	GetTo() string
-	SetFrom(string)
-	GetFrom() string
-	SetConfirmHandle(func())
-	GetConfirmHandle() func()
-	SetData(any)
-	GetRawData() []byte
-	JsonUnmarshalData(any)
+	Confirm()                 // confirm message
+	SetData(any)              // set data
+	GetRawData() []byte       // get raw data
+	SetTo(string)             // set result task name of outputEndpoint
+	GetTo() string            // get task of outputEndpoint name
+	SetFrom(string)           // set input task name of inputEndpoint
+	GetFrom() string          // get task of inputEndpoint name
+	SetConfirmHandle(func())  // set task msg confirm handle func
+	GetConfirmHandle() func() // get task msg confirm handle func
+	JsonUnmarshalData(any)    // when data is json, this method can be used to quickly parse it into a struct
 }
 
 type task struct {
-	data          []byte
-	toName        string
-	fromName      string
-	confirmHandle func()
+	data          []byte // raw data
+	toName        string // control which output endpoint task will go
+	fromName      string // indicate which input endpoint task come from,
+	confirmHandle func() // func to confirm
 }
 
 func (t *task) SetTo(name string) {
