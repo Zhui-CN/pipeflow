@@ -1,13 +1,13 @@
 package nsqEndpoint
 
 import (
-	"github.com/Zhui-CN/pipeflow/endpoints"
 	"github.com/Zhui-CN/pipeflow/tasks"
 	"github.com/nsqio/go-nsq"
 	"log"
 	"time"
 )
 
+// nsq confirm handle
 func confirm(m *nsq.Message) func() {
 	return func() {
 		if !m.HasResponded() {
@@ -16,21 +16,24 @@ func confirm(m *nsq.Message) func() {
 	}
 }
 
+// nsq input endpoint controller
 type inputEndpoint struct {
-	autoConfirm bool
-	innerChan   chan *nsq.Message
-	funcType    tasks.TaskFuncType
+	autoConfirm  bool
+	innerChan    chan *nsq.Message
+	taskTypeFunc tasks.TaskTypeFunc
 }
 
+// HandleMessage nsq handle put nsq message in chan
 func (p *inputEndpoint) HandleMessage(message *nsq.Message) error {
 	message.DisableAutoResponse()
 	p.innerChan <- message
 	return nil
 }
 
+// Get nsq message from chan
 func (p *inputEndpoint) Get() tasks.Task {
 	msg := <-p.innerChan
-	task := p.funcType(msg.Body)
+	task := p.taskTypeFunc(msg.Body)
 	if p.autoConfirm {
 		msg.Finish()
 	} else {
@@ -39,26 +42,32 @@ func (p *inputEndpoint) Get() tasks.Task {
 	return task
 }
 
-func NewInputEndpoint(conf Conf, topic string, channel string, maxInFlight int, autoConfirm bool, taskType tasks.TaskFuncType) endpoints.InputEndpoint {
+/*
+NewInputEndpoint
+Create RawType or MetaType nsq input endpoint controller
+taskType:    task type of RawType or MetaType
+autoConfirm: whether to confirm automatically
+*/
+func NewInputEndpoint(conf Conf, topic string, channel string, maxInFlight int, autoConfirm bool, taskType tasks.TaskTypeFunc) *inputEndpoint {
 	if len(conf.LookUpdHttpAddresses) < 1 && len(conf.NSQDTCPAddresses) < 1 {
-		log.Fatalf("nsq inputEndpoint must have LookUpdHttpAddresses or NSQDTCPAddress")
+		log.Fatalln("nsq inputEndpoint must have LookUpdHttpAddresses or NSQDTCPAddress")
 	}
 	if topic == "" || !nsq.IsValidTopicName(topic) {
-		log.Fatal("invalid topic:", topic)
+		log.Fatalln("invalid topic:", topic)
 	}
 	if channel == "" || !nsq.IsValidChannelName(channel) {
-		log.Fatal("invalid Channel:", channel)
+		log.Fatalln("invalid Channel:", channel)
 	}
 	if maxInFlight < 1 {
-		log.Fatal("maxInFlight must be greater than 0")
+		log.Fatalln("maxInFlight must be greater than 0")
 	}
 	if taskType == nil {
 		taskType = tasks.RawType
 	}
 	endpoint := &inputEndpoint{
-		autoConfirm: autoConfirm,
-		innerChan:   make(chan *nsq.Message, maxInFlight),
-		funcType:    taskType,
+		autoConfirm:  autoConfirm,
+		innerChan:    make(chan *nsq.Message, maxInFlight),
+		taskTypeFunc: taskType,
 	}
 	cfg := nsq.NewConfig()
 	cfg.DialTimeout = time.Second * 5
@@ -67,7 +76,7 @@ func NewInputEndpoint(conf Conf, topic string, channel string, maxInFlight int, 
 	cfg.MaxInFlight = maxInFlight
 	consumer, err := nsq.NewConsumer(topic, channel, cfg)
 	if err != nil {
-		log.Fatalf("init consumer error:%s", err.Error())
+		log.Fatalln("init consumer error:", err.Error())
 	}
 	consumer.AddHandler(endpoint)
 	if len(conf.LookUpdHttpAddresses) != 0 {
@@ -76,7 +85,7 @@ func NewInputEndpoint(conf Conf, topic string, channel string, maxInFlight int, 
 		err = consumer.ConnectToNSQDs(conf.NSQDTCPAddresses)
 	}
 	if err != nil {
-		log.Fatalf("nsq connect error:%s", err.Error())
+		log.Fatalln("nsq connect error:", err.Error())
 	}
 	return endpoint
 }

@@ -1,5 +1,6 @@
 package nsqEndpoint
 
+// Conf nsq connection configuration
 type Conf struct {
 	LookUpdHttpAddresses []string
 	NSQDTCPAddresses     []string
@@ -7,6 +8,7 @@ type Conf struct {
 	NSQDHTTPAddress      string
 }
 
+// DefaultConf test default nsq connection configuration
 func DefaultConf() Conf {
 	return Conf{
 		LookUpdHttpAddresses: []string{"127.0.0.1:4161"},
