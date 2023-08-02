@@ -46,7 +46,7 @@ func (p *inputEndpoint) Get() tasks.Task {
 /*
 NewInputEndpoint
 Create RawType or MetaType nsq input endpoint controller
-taskType:    task type of RawType or MetaType
+taskType: task type of RawType or MetaType
 autoConfirm: whether to confirm automatically
 */
 func NewInputEndpoint(conf Conf, topic string, channel string, maxInFlight int, autoConfirm bool, taskType tasks.TaskTypeFunc) endpoints.InputEndpoint {
