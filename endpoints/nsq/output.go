@@ -7,11 +7,13 @@ import (
 	"time"
 )
 
+// OutputParams nsqOutputEndpoint result params
 type OutputParams struct {
 	Topic string
 	Delay time.Duration
 }
 
+// nsq output endpoint controller
 type outputEndpoint struct {
 	bufferSize int
 	producer   *nsq.Producer
@@ -19,11 +21,13 @@ type outputEndpoint struct {
 	mPubChan   chan *endpoints.Output
 }
 
+// pub handle
 func (p *outputEndpoint) pubHandle() {
 	go p.deferredPublish()
 	go p.multiPublish()
 }
 
+// deferredPublish message
 func (p *outputEndpoint) deferredPublish() {
 	var err error
 	for {
@@ -38,6 +42,7 @@ func (p *outputEndpoint) deferredPublish() {
 	}
 }
 
+// multiPublish message
 func (p *outputEndpoint) multiPublish() {
 	var ok bool
 	var err error
@@ -74,6 +79,7 @@ func (p *outputEndpoint) multiPublish() {
 	}
 }
 
+// Put task to nsq message
 func (p *outputEndpoint) Put(output *endpoints.Output) {
 	if output.Params != nil {
 		if output.Params.(OutputParams).Delay > 0 {
