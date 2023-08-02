@@ -17,3 +17,20 @@ type Output struct {
 	Task   tasks.Task
 	Params any
 }
+
+// Forks dynamic forks output
+type Forks []tasks.Hop
+
+// DynamicOutput dynamic forks output
+type DynamicOutput struct {
+	Forks Forks
+}
+
+// GetNextTasks get hop next tasks
+func (d *DynamicOutput) GetNextTasks(output *Output) []*tasks.MetaTask {
+	task := output.Task.(*tasks.MetaTask)
+	if len(d.Forks) > 0 {
+		task.AddHops(d.Forks)
+	}
+	return task.GetNextTasks()
+}
