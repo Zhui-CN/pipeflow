@@ -7,19 +7,22 @@ import (
 	"log"
 )
 
+// rmq confirm handle
 func confirm(m *amqp.Delivery) func() {
 	return func() {
 		m.Ack(false)
 	}
 }
 
+// rmq input endpoint controller
 type inputEndpoint struct {
 	autoConfirm  bool
 	innerChan    chan *amqp.Delivery
-	funcType     tasks.TaskFuncType
+	taskTypeFunc tasks.TaskTypeFunc
 	deliveryChan <-chan amqp.Delivery
 }
 
+// rmq handle put rmq message in chan
 func (p *inputEndpoint) handleMessage() {
 	for {
 		msg := <-p.deliveryChan
@@ -27,9 +30,10 @@ func (p *inputEndpoint) handleMessage() {
 	}
 }
 
+// Get rmq message from chan
 func (p *inputEndpoint) Get() tasks.Task {
 	msg := <-p.innerChan
-	task := p.funcType(msg.Body)
+	task := p.taskTypeFunc(msg.Body)
 	if p.autoConfirm {
 		msg.Ack(false)
 	} else {
@@ -38,13 +42,19 @@ func (p *inputEndpoint) Get() tasks.Task {
 	return task
 }
 
-func NewInputEndpoint(conf Conf, queue string, qos int, autoConfirm bool, taskType tasks.TaskFuncType) endpoints.InputEndpoint {
+/*
+NewInputEndpoint
+Create RawType or MetaType rmq input endpoint controller
+taskType: task type of RawType or MetaType
+autoConfirm: whether to confirm automatically
+*/
+func NewInputEndpoint(conf Conf, queue string, qos int, autoConfirm bool, taskType tasks.TaskTypeFunc) endpoints.InputEndpoint {
 	rmq := newRmq(conf)
 	if queue == "" {
-		log.Fatal("invalid queue:", queue)
+		log.Fatalln("invalid queue:", queue)
 	}
 	if qos < 1 {
-		log.Fatal("qos must be greater than 0")
+		log.Fatalln("qos must be greater than 0")
 	}
 	if taskType == nil {
 		taskType = tasks.RawType
@@ -53,12 +63,12 @@ func NewInputEndpoint(conf Conf, queue string, qos int, autoConfirm bool, taskTy
 	rmq.queueDeclare(queue)
 	deliveryChan, err := rmq.channel.Consume(queue, "", false, false, false, false, nil)
 	if err != nil {
-		log.Fatal("cannot allocate consume:", err.Error())
+		log.Fatalln("cannot allocate consume:", err.Error())
 	}
 	endpoint := &inputEndpoint{
 		autoConfirm:  autoConfirm,
 		innerChan:    make(chan *amqp.Delivery, qos),
-		funcType:     taskType,
+		taskTypeFunc: taskType,
 		deliveryChan: deliveryChan,
 	}
 	go endpoint.handleMessage()
