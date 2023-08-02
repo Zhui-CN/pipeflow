@@ -46,7 +46,7 @@ func (t *MetaTask) JsonUnmarshalData(v any) {
 
 // GetNextTasks get hop next tasks
 func (t *MetaTask) GetNextTasks() []*MetaTask {
-	var nextTasks []*MetaTask
+	nextTasks := make([]*MetaTask, 0, len(t.MetaData.Meta.Hop.Next))
 	if t.NextHop {
 		for _, hop := range t.MetaData.Meta.Hop.Next {
 			md := &metaData{
