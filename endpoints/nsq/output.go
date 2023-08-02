@@ -90,7 +90,7 @@ func (p *outputEndpoint) Put(output *endpoints.Output) {
 	}
 }
 
-func NewOutputEndpoint(conf Conf, concurrency int, bufferSize int) *outputEndpoint {
+func NewOutputEndpoint(conf Conf, concurrency int, bufferSize int) endpoints.OutputEndpoint {
 	if conf.NSQDTCPAddress == "" {
 		log.Fatalln("nsq output must have NSQDTCPAddress")
 	}

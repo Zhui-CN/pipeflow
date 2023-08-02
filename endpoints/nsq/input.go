@@ -1,6 +1,7 @@
 package nsqEndpoint
 
 import (
+	"github.com/Zhui-CN/pipeflow/endpoints"
 	"github.com/Zhui-CN/pipeflow/tasks"
 	"github.com/nsqio/go-nsq"
 	"log"
@@ -48,7 +49,7 @@ Create RawType or MetaType nsq input endpoint controller
 taskType:    task type of RawType or MetaType
 autoConfirm: whether to confirm automatically
 */
-func NewInputEndpoint(conf Conf, topic string, channel string, maxInFlight int, autoConfirm bool, taskType tasks.TaskTypeFunc) *inputEndpoint {
+func NewInputEndpoint(conf Conf, topic string, channel string, maxInFlight int, autoConfirm bool, taskType tasks.TaskTypeFunc) endpoints.InputEndpoint {
 	if len(conf.LookUpdHttpAddresses) < 1 && len(conf.NSQDTCPAddresses) < 1 {
 		log.Fatalln("nsq inputEndpoint must have LookUpdHttpAddresses or NSQDTCPAddress")
 	}
