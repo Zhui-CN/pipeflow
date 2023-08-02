@@ -15,10 +15,9 @@ type OutputParams struct {
 
 // nsq output endpoint controller
 type outputEndpoint struct {
-	bufferSize int
-	producer   *nsq.Producer
-	dPubChan   chan *endpoints.Output
-	mPubChan   chan *endpoints.Output
+	producer *nsq.Producer
+	dPubChan chan *endpoints.Output
+	mPubChan chan *endpoints.Output
 }
 
 // pub handle
@@ -48,6 +47,7 @@ func (p *outputEndpoint) multiPublish() {
 	var err error
 	var mPubMap map[string][][]byte
 	var mConfirmMap map[string][]func()
+	bufferSize := cap(p.mPubChan)
 	for {
 		select {
 		case output := <-p.mPubChan:
@@ -57,8 +57,8 @@ func (p *outputEndpoint) multiPublish() {
 				mConfirmMap = make(map[string][]func())
 			}
 			if _, ok = mPubMap[topic]; !ok {
-				mPubMap[topic] = make([][]byte, 0, p.bufferSize)
-				mConfirmMap[topic] = make([]func(), 0, p.bufferSize)
+				mPubMap[topic] = make([][]byte, 0, bufferSize)
+				mConfirmMap[topic] = make([]func(), 0, bufferSize)
 			}
 			mPubMap[topic] = append(mPubMap[topic], output.Task.GetRawData())
 			mConfirmMap[topic] = append(mConfirmMap[topic], output.Task.Confirm)
@@ -105,13 +105,12 @@ func NewOutputEndpoint(conf Conf, concurrency int, bufferSize int) endpoints.Out
 		concurrency = 1
 	}
 	if bufferSize < 1 {
-		bufferSize = 50
+		bufferSize = 30
 	}
 	endpoint := &outputEndpoint{
-		bufferSize: bufferSize,
-		producer:   producer,
-		dPubChan:   make(chan *endpoints.Output, 2),
-		mPubChan:   make(chan *endpoints.Output, bufferSize),
+		producer: producer,
+		dPubChan: make(chan *endpoints.Output, 2),
+		mPubChan: make(chan *endpoints.Output, bufferSize),
 	}
 	for i := 0; i < concurrency; i++ {
 		endpoint.pubHandle()
