@@ -17,12 +17,12 @@ type Server struct {
 }
 
 // AddWorker add server worker execute function
-func (s Server) AddWorker(worker func(...interface{}), params ...interface{}) {
+func (s Server) AddWorker(worker func(...any), params ...any) {
 	s.workers = append(s.workers, func() { worker(params...) })
 }
 
 // AddRoutineWorker add server routine worker execute function
-func (s Server) AddRoutineWorker(worker func(...interface{}), second time.Duration, immediately bool, params ...interface{}) {
+func (s Server) AddRoutineWorker(worker func(...any), second time.Duration, immediately bool, params ...any) {
 	if second < time.Second {
 		second = time.Second * second
 	}

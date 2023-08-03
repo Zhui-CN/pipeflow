@@ -17,8 +17,8 @@ type meta struct {
 }
 
 type metaData struct {
-	Meta meta `json:"meta"`
 	Data any  `json:"data"`
+	Meta meta `json:"meta"`
 }
 
 /*
@@ -50,8 +50,8 @@ func (t *MetaTask) GetNextTasks() []*MetaTask {
 	if t.NextHop {
 		for _, hop := range t.MetaData.Meta.Hop.Next {
 			md := &metaData{
-				Meta: meta{Params: t.MetaData.Meta.Params, Hop: hop},
 				Data: t.MetaData.Data,
+				Meta: meta{Params: t.MetaData.Meta.Params, Hop: hop},
 			}
 			byteData, _ := json.Marshal(md)
 			metaTask := &MetaTask{task: &task{data: byteData}, MetaData: md, NextHop: true}
@@ -71,8 +71,8 @@ func (t *MetaTask) AddHops(hops []Hop) {
 // Spawn spawn new task
 func (t *MetaTask) Spawn(data any, nextHop bool, hopConf *Hop) *MetaTask {
 	md := &metaData{
-		Meta: t.MetaData.Meta,
 		Data: data,
+		Meta: t.MetaData.Meta,
 	}
 	if hopConf != nil {
 		md.Meta.Hop = *hopConf

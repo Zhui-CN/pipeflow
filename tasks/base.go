@@ -1,11 +1,11 @@
 package tasks
 
+// TaskTypeFunc Create task
 type TaskTypeFunc = func([]byte) Task
 
-// Create task
 var (
-	RawType  = NewRawTask
-	MetaType = NewMetaTask
+	RawType  TaskTypeFunc = NewRawTask
+	MetaType TaskTypeFunc = NewMetaTask
 )
 
 type Task interface {
