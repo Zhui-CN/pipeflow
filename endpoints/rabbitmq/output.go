@@ -2,6 +2,8 @@ package rmqEndpoint
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"github.com/Zhui-CN/pipeflow/endpoints"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -47,6 +49,7 @@ func (p *outputEndpoint) Put(output *endpoints.Output) {
 	}
 }
 
+// NewOutputEndpoint create rmq output endpoint controller
 func NewOutputEndpoint(conf Conf, concurrency int, bufferSize int) endpoints.OutputEndpoint {
 	if concurrency < 1 {
 		concurrency = 1
@@ -63,4 +66,35 @@ func NewOutputEndpoint(conf Conf, concurrency int, bufferSize int) endpoints.Out
 		endpoint.pubHandle()
 	}
 	return endpoint
+}
+
+// use meta data in task to determine topics to pub, and update meta data.
+type dynamicOutputEndpoint struct {
+	*outputEndpoint
+	*endpoints.DynamicOutput
+}
+
+func (p *dynamicOutputEndpoint) Put(output *endpoints.Output) {
+	p.outputEndpoint.Put(output)
+	nextTasks := p.GetNextTasks(output)
+	for idx := range nextTasks {
+		hop := nextTasks[idx].MetaData.Meta.Hop
+		if hop.Queue == "" {
+			fmt.Println(errors.New("invalid queue:" + hop.Queue).Error())
+			continue
+		}
+		nextOutput := &endpoints.Output{
+			Task:   nextTasks[idx],
+			Params: OutputParams{Queue: hop.Queue},
+		}
+		p.outputEndpoint.Put(nextOutput)
+	}
+}
+
+// NewDynamicOutputEndpoint create rmq dynamic output endpoint controller
+func NewDynamicOutputEndpoint(conf Conf, forks endpoints.Forks, concurrency int, bufferSize int) endpoints.OutputEndpoint {
+	return &dynamicOutputEndpoint{
+		outputEndpoint: NewOutputEndpoint(conf, concurrency, bufferSize).(*outputEndpoint),
+		DynamicOutput:  &endpoints.DynamicOutput{Forks: forks},
+	}
 }

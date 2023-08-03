@@ -1,6 +1,8 @@
 package nsqEndpoint
 
 import (
+	"errors"
+	"fmt"
 	"github.com/Zhui-CN/pipeflow/endpoints"
 	"github.com/nsqio/go-nsq"
 	"log"
@@ -90,6 +92,7 @@ func (p *outputEndpoint) Put(output *endpoints.Output) {
 	}
 }
 
+// NewOutputEndpoint create nsq output endpoint controller
 func NewOutputEndpoint(conf Conf, concurrency int, bufferSize int) endpoints.OutputEndpoint {
 	if conf.NSQDTCPAddress == "" {
 		log.Fatalln("nsq output must have NSQDTCPAddress")
@@ -116,4 +119,45 @@ func NewOutputEndpoint(conf Conf, concurrency int, bufferSize int) endpoints.Out
 		endpoint.pubHandle()
 	}
 	return endpoint
+}
+
+// use meta data in task to determine topics to pub, and update meta data.
+type dynamicOutputEndpoint struct {
+	*outputEndpoint
+	*endpoints.DynamicOutput
+}
+
+func (p *dynamicOutputEndpoint) Put(output *endpoints.Output) {
+	var delay float64
+	p.outputEndpoint.Put(output)
+	nextTasks := p.GetNextTasks(output)
+	for idx := range nextTasks {
+		hop := nextTasks[idx].MetaData.Meta.Hop
+		if hop.Queue == "" || !nsq.IsValidTopicName(hop.Queue) {
+			fmt.Println(errors.New("invalid topic:" + hop.Queue).Error())
+			continue
+		}
+		hopParams := hop.Params
+		if hopParams == nil || hopParams["delay"] == nil {
+			delay = 0.0
+		} else {
+			delay = hopParams["delay"].(float64)
+		}
+		nextOutput := &endpoints.Output{
+			Task: nextTasks[idx],
+			Params: OutputParams{
+				Topic: hop.Queue,
+				Delay: time.Duration(delay),
+			},
+		}
+		p.outputEndpoint.Put(nextOutput)
+	}
+}
+
+// NewDynamicOutputEndpoint create nsq dynamic output endpoint controller
+func NewDynamicOutputEndpoint(conf Conf, forks endpoints.Forks, concurrency int, bufferSize int) endpoints.OutputEndpoint {
+	return &dynamicOutputEndpoint{
+		outputEndpoint: NewOutputEndpoint(conf, concurrency, bufferSize).(*outputEndpoint),
+		DynamicOutput:  &endpoints.DynamicOutput{Forks: forks},
+	}
 }
