@@ -17,12 +17,12 @@ type Server struct {
 }
 
 // AddWorker add server worker execute function
-func (s Server) AddWorker(worker func(...any), params ...any) {
+func (s *Server) AddWorker(worker func(...any), params ...any) {
 	s.workers = append(s.workers, func() { worker(params...) })
 }
 
 // AddRoutineWorker add server routine worker execute function
-func (s Server) AddRoutineWorker(worker func(...any), second time.Duration, immediately bool, params ...any) {
+func (s *Server) AddRoutineWorker(worker func(...any), second time.Duration, immediately bool, params ...any) {
 	if second < time.Second {
 		second = time.Second * second
 	}
@@ -39,7 +39,7 @@ func (s Server) AddRoutineWorker(worker func(...any), second time.Duration, imme
 }
 
 // AddGroup server group
-func (s Server) AddGroup(name string, handle handle, concurrency int) *Group {
+func (s *Server) AddGroup(name string, handle handle, concurrency int) *Group {
 	if _, ok := s.groupMap[name]; ok {
 		log.Fatalf("group %s already exist", name)
 	}
@@ -63,7 +63,7 @@ func (s Server) AddGroup(name string, handle handle, concurrency int) *Group {
 	return group
 }
 
-func (s Server) Run() {
+func (s *Server) Run() {
 	for _, f := range s.workers {
 		go f()
 	}
@@ -79,6 +79,6 @@ func (s Server) Run() {
 	log.Println("server finish")
 }
 
-func New() Server {
-	return Server{groupMap: make(map[string]*Group)}
+func New() *Server {
+	return &Server{groupMap: make(map[string]*Group)}
 }
