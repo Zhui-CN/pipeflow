@@ -6,14 +6,14 @@ import (
 )
 
 type Hop struct {
-	Params map[any]any `json:"params"` // current hop params
-	Queue  string      `json:"queue"`  // queue name
-	Next   []Hop       `json:"next"`   // next hop info
+	Params map[string]any `json:"params"` // current hop params
+	Queue  string         `json:"queue"`  // queue name
+	Next   []Hop          `json:"next"`   // next hop info
 }
 
 type meta struct {
-	Params map[any]any `json:"params"` // meta params
-	Hop    Hop         `json:"hop"`    // hop info
+	Params map[string]any `json:"params"` // meta params
+	Hop    Hop            `json:"hop"`    // hop info
 }
 
 type metaData struct {
